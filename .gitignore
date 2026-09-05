@@ -1,0 +1,22 @@
+# Terraform local state and overrides
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+.terraform/
+.terraform.lock.hcl
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Environment and secrets
+.env
+*.pem
+*.key
+
+# Docker & OS artifacts
+.DS_Store
+Thumbs.db
+node_modules/
+dist/
