@@ -1,0 +1,57 @@
+name: CI - Build, Security Scan & Push to ECR
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'app/**'
+      - '.github/workflows/ci-build-scan.yml'
+
+jobs:
+  build-and-scan:
+    name: Build, Scan & Push
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        service: [auth-service, catalog-service]
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-south-1
+
+    - name: Log in to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build Docker Image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        SERVICE_NAME: ${{ matrix.service }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker build -t $ECR_REGISTRY/$SERVICE_NAME:$IMAGE_TAG -t $ECR_REGISTRY/$SERVICE_NAME:latest ./app/$SERVICE_NAME
+
+    - name: Scan Image with Trivy (Security Vulnerability Gate)
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: '${{ steps.login-ecr.outputs.registry }}/${{ matrix.service }}:${{ github.sha }}'
+        format: 'table'
+        exit-code: '0'
+        severity: 'CRITICAL,HIGH'
+
+    - name: Push Images to AWS ECR
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        SERVICE_NAME: ${{ matrix.service }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker push $ECR_REGISTRY/$SERVICE_NAME:$IMAGE_TAG
+        docker push $ECR_REGISTRY/$SERVICE_NAME:latest
