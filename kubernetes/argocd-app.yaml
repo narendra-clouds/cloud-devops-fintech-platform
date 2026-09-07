@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'https://github.com/YOUR_GITHUB_USERNAME/cloud-devops-fintech-platform.git'
+    repoURL: 'https://github.com/narendra-clouds/cloud-devops-fintech-platform.git'
     targetRevision: HEAD
     path: kubernetes/manifests
   destination:
